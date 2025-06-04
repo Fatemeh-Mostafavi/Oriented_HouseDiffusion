@@ -18,6 +18,6 @@ Next, the following files need to be replaced with the files with the same name 
 Next, the image_sample.py file in the house_diffusion/scripts/ directory should be removed and the following files need to be added (in the same directory):
 
 - image_sample_FID.py
-- iamge_sample_svg.py
+- image_sample_svg.py
 - fid_score.py
   
