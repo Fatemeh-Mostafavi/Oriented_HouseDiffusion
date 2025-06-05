@@ -22,4 +22,4 @@ Next, the image_sample.py file in the house_diffusion/scripts/ directory should 
 - fid_score.py
   
 
-The rest of the process, including training and testing the model is similar to the original HouseDiffusion workflow.
+After replacing the above-mentioned files, you can follow the steps in the Oriented-HouseDiffusion.ipynp to go through the dataset curation, training, testing, and evaluation. There you can also find some example results of target set 6.
