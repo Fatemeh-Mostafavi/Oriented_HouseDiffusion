@@ -21,3 +21,5 @@ Next, the image_sample.py file in the house_diffusion/scripts/ directory should 
 - image_sample_svg.py
 - fid_score.py
   
+
+The rest of the process, including training and testing the model is similar to the original HouseDiffusion workflow.
