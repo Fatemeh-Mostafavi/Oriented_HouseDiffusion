@@ -10,14 +10,6 @@ from shapely.geometry import Polygon, LineString
 import matplotlib.pyplot as plt
 from shapely.geometry.polygon import orient
 
-SIMPLIFY_TOL = 0.15
-SIMPLIFY_TOL_DOOR = 0.01
-SNAP_IOU_THRESHOLD = 0.90
-EDGE_ADJ_DIST_TOL = 2.0
-PARALLEL_TOL = 0.60
-MARGIN = 40
-EDGE_ADJ_DIST_TOL_ENTRANCE = 6.0
-PARALLEL_TOL_ENTRANCE = 0.50
 
 def polygon_iou(poly1, poly2):
     inter = poly1.intersection(poly2).area
