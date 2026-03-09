@@ -180,7 +180,42 @@ def apply_reorder(polygons, zone_types, idxs):
     return [polygons[i] for i in idxs], [zone_types[i] for i in idxs]
 
 
+def filter_internal_doors_without_two_sided_room_adjacency(polygons, zone_types,
+                                                           dist_tol=EDGE_ADJ_DIST_TOL,
+                                                           parallel_tol=PARALLEL_TOL):
+    if not polygons:
+        return polygons, zone_types
 
+    edges_full = extract_edges(polygons)
+    ed_rm = assign_ed_rm(zone_types, edges_full, dist_tol=dist_tol, parallel_tol=parallel_tol)
+    edge_lines = [LineString([(e[0], e[1]), (e[2], e[3])]) for e in edges_full]
+
+    door_idxs = [i for i, zt in enumerate(zone_types) if zt == 17]
+    room_set = set(i for i, zt in enumerate(zone_types) if zt not in [15, 17])
+
+    keep = [True] * len(polygons)
+
+    for di in door_idxs:
+        door_edge_ids = [ei for ei, e in enumerate(edges_full) if e[4] == di]
+        if len(door_edge_ids) < 4:
+            keep[di] = False
+            continue
+
+        lengths = [edge_lines[ei].length for ei in door_edge_ids]
+        long_local = sorted(range(len(lengths)), key=lambda k: lengths[k], reverse=True)[:2]
+        long_edges = [door_edge_ids[k] for k in long_local]
+
+        hits = 0
+        for ei in long_edges:
+            rm = ed_rm[ei]
+            if len(rm) == 2 and rm[1] in room_set:
+                hits += 1
+
+        if hits < 2:
+            keep[di] = False
+
+    idxs = [i for i, ok in enumerate(keep) if ok]
+    return [polygons[i] for i in idxs], [zone_types[i] for i in idxs]
 
 
 def compute_orient_rooms_only(polygons, zone_types):
