@@ -180,7 +180,7 @@ def apply_reorder(polygons, zone_types, idxs):
     return [polygons[i] for i in idxs], [zone_types[i] for i in idxs]
 
 
-def filter_internal_doors_without_two_sided_room_adjacency(polygons, zone_types,
+def filter_internal_doors_without_two_sided_room_adjacency(polygons, room_type, #ORPLAN style
                                                            dist_tol=EDGE_ADJ_DIST_TOL,
                                                            parallel_tol=PARALLEL_TOL):
     if not polygons:
