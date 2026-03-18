@@ -306,21 +306,56 @@ def plot_with_polygons(polygons, edges, ed_rm, zone_types, orient_vals, title="U
     plt.show()
 
 
+)
+
+def _find_column(df, candidates):
+    return next((c for c in candidates if c in df.columns), None)
+
+
 def unit_csv_to_json(
     csv_path,
     show_plot=True,
     return_data=False,
-    geometry_col="geometry_wkt",
+    geometry_col=None,
     zoning_col="zoning",
-    is_unit_polygon_col="is_unit_polygon",
+    is_unit_polygon_col=None,
     rotation_degrees=0,
 ):
     df = pd.read_csv(csv_path)
 
-    if geometry_col not in df.columns:
-        raise ValueError(f"Missing geometry column: {geometry_col}")
+    # --- normalize column names ---
+    df.columns = df.columns.str.lower()
 
-    if is_unit_polygon_col in df.columns:
+    # --- resolve geometry column ---
+    geom_candidates = ["geometry", "geometry_wkt", "geom", "wkt"]
+    if geometry_col:
+        geometry_col = geometry_col.lower()
+
+    if not geometry_col or geometry_col not in df.columns:
+        geometry_col = _find_column(df, geom_candidates)
+
+    if geometry_col is None:
+        raise ValueError(f"No valid geometry column found in {csv_path}")
+
+    print(f"  Using geometry column: {geometry_col}")
+
+    # --- resolve optional columns ---
+    if is_unit_polygon_col:
+        is_unit_polygon_col = is_unit_polygon_col.lower()
+
+    if zoning_col:
+        zoning_col = zoning_col.lower()
+
+    if is_unit_polygon_col not in df.columns:
+        print("  is_unit_polygon column not found → skipping filter")
+        is_unit_polygon_col = None
+
+    if zoning_col not in df.columns:
+        print("  zoning column not found → zone type fallback may apply")
+        zoning_col = None
+
+    # --- filter unit polygons if column exists ---
+    if is_unit_polygon_col:
         df = df[df[is_unit_polygon_col] != True].copy()
 
     df = df.reset_index(drop=True)
@@ -329,7 +364,10 @@ def unit_csv_to_json(
     zone_types = []
 
     for _, row in df.iterrows():
-        geom = wkt.loads(row[geometry_col])
+        try:
+            geom = wkt.loads(row[geometry_col])
+        except Exception:
+            continue
 
         if geom.geom_type == "MultiPolygon":
             geom = max(list(geom.geoms), key=lambda g: g.area)
@@ -337,7 +375,7 @@ def unit_csv_to_json(
         if geom.geom_type != "Polygon":
             continue
 
-        zt = row_to_zone_type(row, zoning_col=zoning_col)
+        zt = row_to_zone_type(row, zoning_col=zoning_col) if zoning_col else 1
         if zt == 0:
             continue
 
@@ -347,6 +385,7 @@ def unit_csv_to_json(
     if not polygons:
         raise ValueError(f"No valid polygons found in {csv_path}")
 
+    # --- processing pipeline ---
     polygons = [simplify_and_snap(p, zt) for p, zt in zip(polygons, zone_types)]
     polygons = rotate_polygons(polygons, rotation_degrees, origin="centroid")
     polygons = normalize_polygons(polygons)
@@ -369,8 +408,7 @@ def unit_csv_to_json(
     edges = [[e[0], e[1], e[2], e[3]] for e in edges_full]
 
     data = {
-        #"zone_types": zone_types,
-        "room_type": zone_types, #ORPLAN
+        "room_type": zone_types,
         "boxes": boxes,
         "edges": edges,
         "ed_rm": ed_rm,
@@ -380,8 +418,12 @@ def unit_csv_to_json(
 
     if show_plot:
         plot_with_polygons(
-            polygons, edges_full, ed_rm, zone_types, orient_vals,
-            title=f"{os.path.basename(csv_path)} | rot={rotation_degrees}°"
+            polygons,
+            edges_full,
+            ed_rm,
+            zone_types,
+            orient_vals,
+            title=f"{os.path.basename(csv_path)} | rot={rotation_degrees}°",
         )
 
     if return_data:
@@ -394,13 +436,14 @@ def unit_csv_to_json(
     print(f"  Saved JSON -> {out_path}")
     return data
 
+
 def batch_convert_unit_csvs_with_plots(
     csv_dir,
     output_dir,
     make_plots=True,
-    geometry_col="geometry_wkt",
+    geometry_col=None,
     zoning_col="zoning",
-    is_unit_polygon_col="is_unit_polygon",
+    is_unit_polygon_col=None,
     rotation_degrees=0,
 ):
     os.makedirs(output_dir, exist_ok=True)
