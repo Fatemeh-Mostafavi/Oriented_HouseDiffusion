@@ -306,8 +306,6 @@ def plot_with_polygons(polygons, edges, ed_rm, zone_types, orient_vals, title="U
     plt.show()
 
 
-)
-
 def _find_column(df, candidates):
     return next((c for c in candidates if c in df.columns), None)
 
